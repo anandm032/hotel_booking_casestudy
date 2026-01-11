@@ -1,0 +1,184 @@
+---
+title: "Hotel Booking Cancellation & Demand Analysis"
+author: "ANAND M"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## 🔹 Business Problem
+
+Hotel businesses experience revenue loss due to booking cancellations and unpredictable demand.  
+Understanding the drivers of cancellations and demand trends is crucial for effective revenue management.
+
+## 🔹 Objective
+
+The objective of this case study is to analyze hotel booking data to:
+
+- Identify factors influencing booking cancellations  
+- Understand seasonal and hotel-type demand trends  
+- Provide actionable recommendations to reduce cancellations and improve revenue
+
+## 🔹 Key Questions
+
+- Which hotel type has higher cancellation rates?  
+- How does lead time affect cancellations?  
+- Does deposit type reduce cancellation probability?  
+- Which months show peak demand?  
+- How does ADR influence cancellations?
+
+---
+
+##   Tools & Libraries
+
+```{r libraries, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(lubridate)
+library(janitor)
+library(ggplot2)
+
+if(!dir.exists("plots")){
+dir.create("plots")
+}
+
+
+hotel_df <- read_csv("C:/Users/anand/Documents/Hotel_Booking_Case_Study/R_PROGRAM/hotel_bookings.csv")
+hotel_df <- hotel_df %>% mutate(total_guests = adults + children + babies)
+```
+
+##   Cancellation Rate by Hotel Type
+
+```{r cancellation, message=FALSE, warning=FALSE}
+hotel_df %>%
+group_by(hotel) %>%
+summarise(
+total_bookings = n(),
+cancellations = sum(as.numeric(as.character(is_canceled))),
+cancellation_rate = mean(as.numeric(as.character(is_canceled)))*100
+)
+p1 <- ggplot(hotel_df, aes(x=hotel, fill=is_canceled)) +
+geom_bar(position="fill") +
+ylab("Proportion") +
+ggtitle("Cancellation Rate by Hotel Type") +
+scale_fill_manual(values=c("0"="green","1"="red"), labels=c("Not Canceled","Canceled"))
+p1
+ggsave("plots/cancellation_by_hotel.png", plot=p1, width=6, height=4)
+```
+
+Insight:
+City hotels show higher cancellation rates compared to resort hotels
+
+##  Lead Time vs Cancellation
+```{r leadtime, message=FALSE, warning=FALSE}
+hotel_df %>%
+group_by(is_canceled) %>%
+summarise(avg_lead_time = mean(lead_time))
+
+
+p2 <- ggplot(hotel_df, aes(x=is_canceled, y=lead_time, fill=is_canceled)) +
+geom_boxplot() +
+ylab("Lead Time (Days)") +
+xlab("Canceled") +
+ggtitle("Lead Time vs Cancellation") +
+scale_fill_manual(values=c("0"="green","1"="red"))
+p2
+ggsave("plots/leadtime_vs_cancellation.png", plot=p2, width=6, height=4)
+```
+
+Insight:
+Longer lead times are associated with higher likelihood of cancellations.
+
+##  Monthly Booking Demand
+
+```{r monthly, message=FALSE, warning=FALSE}
+monthly_demand <- hotel_df %>%
+group_by(arrival_date_month) %>%
+summarise(total_bookings = n())
+monthly_demand
+p3 <- ggplot(monthly_demand, aes(x=arrival_date_month, y=total_bookings, group=1)) +
+geom_line(color="blue", size=1.2) +
+geom_point(color="red", size=2) +
+xlab("Month") + ylab("Total Bookings") +
+ggtitle("Monthly Booking Demand Trend") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p3
+ggsave("plots/monthly_booking_demand.png", plot=p3, width=6, height=4)
+```
+Insight:
+Peak bookings occur in July and August; January and February show low demand.
+
+
+##  Deposit Type vs Cancellation
+
+```{r deposit, message=FALSE, warning=FALSE}
+hotel_df %>%
+group_by(deposit_type) %>%
+summarise(cancellation_rate = mean(as.numeric(as.character(is_canceled)))*100)
+p4 <- ggplot(hotel_df, aes(x=deposit_type, fill=is_canceled)) +
+geom_bar(position="fill") +
+ylab("Proportion") +
+ggtitle("Cancellation Rate by Deposit Type") +
+scale_fill_manual(values=c("0"="green","1"="red"), labels=c("Not Canceled","Canceled"))
+p4
+ggsave("plots/deposit_type_vs_cancellation.png", plot=p4, width=6, height=4)
+```
+Insight:
+Non-refundable deposits significantly reduce cancellations
+
+
+##  ADR vs Cancellation
+```{r ADR, message=FALSE, warning=FALSE}
+p5 <- ggplot(hotel_df, aes(x=is_canceled, y=adr, fill=is_canceled)) +
+geom_boxplot() +
+ylab("Average Daily Rate (ADR)") +
+xlab("Canceled") +
+ggtitle("ADR vs Cancellation") +
+scale_fill_manual(values=c("0"="green","1"="red"))
+p5
+ggsave("plots/adr_vs_cancellation.png", plot=p5, width=6, height=4)
+```
+Insight:
+Extreme ADR values can increase the risk of cancellation
+
+##  Total Guests vs Cancellation
+
+```{r totalguest, message=FALSE, warning=FALSE}
+p6 <- ggplot(hotel_df, aes(x=is_canceled, y=total_guests, fill=is_canceled)) +
+geom_boxplot() +
+ylab("Total Guests") +
+xlab("Canceled") +
+ggtitle("Total Guests vs Cancellation") +
+scale_fill_manual(values=c("0"="green","1"="red"))
+p6
+ggsave("plots/total_guests_vs_cancellation.png", plot=p6, width=6, height=4)
+```
+
+Insight:
+Total number of guests has some effect on cancellation trends but is less significant than lead time or deposit type.
+
+##  Key Insights
+
+City hotels have higher cancellation rates than resort hotels
+
+Longer lead times increase likelihood of cancellations
+
+Non-refundable deposits reduce cancellations significantly
+
+Peak bookings in July–August, low in January–February
+
+ADR extremes affect cancellations
+
+##  Business Recommendations
+
+Apply stricter cancellation policies for long lead-time bookings
+
+Encourage non-refundable deposit options during peak seasons
+
+Optimize pricing based on seasonal demand
+
+City hotels can focus on corporate/repeat customers to reduce cancellations
+
+##  Conclusion
+
+This case study analyzed 100,000+ hotel bookings to identify cancellation drivers and demand patterns.
+Plots have been automatically saved in the plots/ folder for portfolio or GitHub use.
+The insights and recommendations can help hotels increase revenue and reduce losses due to cancellations
